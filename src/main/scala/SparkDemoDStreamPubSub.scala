@@ -59,7 +59,7 @@ object SparkDemoDStreamPubSub {
       val current_timestamp = new Timestamp(System.currentTimeMillis())
 
       //val rows = rdd.map(l => Row(l, current_timestamp))
-      def row(line: List[String]): Row = Row(line(0), line(1).toInt, line(2).toInt, current_timestamp)
+      def row(line: List[String]): Row = Row(line.head, line(1).toInt, line(2).toInt, current_timestamp)
       val rows = rdd
       .map(_.split(",").to[List]).map(row)
         //.flatMap(line => line.split(","))
