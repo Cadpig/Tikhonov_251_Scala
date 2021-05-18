@@ -2,6 +2,8 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Encoder, Encoders}
 import org.apache.spark
 
+import myPackage.DataFrameTransform
+
 import scala.io.Source
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
@@ -21,6 +23,8 @@ case class Plane(N_NUMBER: BigInt, SERIAL_NUMBER:String, MFR_MDL_CODE:BigInt,
 object SparkDemo {
   def main(args: Array[String]): Unit = {
     Logger.getRootLogger.setLevel(Level.INFO)
+
+    val transform = new DataFrameTransform()
 
     val inputPath = "gs://myexamplebucket251/faa_registration.csv"
     // val bucket = "myexamplebucket251"
@@ -47,6 +51,7 @@ object SparkDemo {
       .load(inputPath)
       //.load("/Users/vladislavtihonov/Downloads/archive/faa_registration.csv")
 
+
     import spark.implicits._
 
     implicit val enc: Encoder[Plane] = Encoders.product[Plane]
@@ -62,33 +67,46 @@ object SparkDemo {
 
     //.load("/Users/vladislavtihonov/Downloads/archive/faa_registration.csv")
 
-    val df_country_count = df
+    val df_country_count = transform.transformCountry(df)/*df
       .where("COUNTRY is not null")
       .groupBy("COUNTRY")
       .count()
-    df_country_count.sort(desc("count")).limit(10).show()
+      .sort(desc("count"))
+      .limit(10)*/
 
-    val df_aircraft_count = df
+    df_country_count.cache()
+
+    df_country_count.show()
+
+    val df_aircraft_count = transform.transformAirplane(df)/*df
       .withColumnRenamed("TYPE AIRCRAFT", "TYPE_AIRCRAFT")
       .groupBy("TYPE_AIRCRAFT")
       .count()
+      .sort(desc("count"))
+      .limit(3)*/
     //df_aircraft_count.withColumnRenamed("TYPE AIRCRAFT", "TYPE_AIRCRAFT")
-    df_aircraft_count.sort(desc("count")).limit(3).show()
 
-    val df_year_aircraft_count = df
+    df_aircraft_count.cache()
+
+    df_aircraft_count.show()
+
+    val df_year_aircraft_count = transform.transformYearAirplane(df)/*df
       .withColumnRenamed("TYPE AIRCRAFT", "TYPE_AIRCRAFT")
       .withColumnRenamed("YEAR MFR", "YEAR_MFR")
       .where("YEAR_MFR is not null")
       .groupBy("TYPE_AIRCRAFT", "YEAR_MFR")
       .count()
+      .sort(desc("count"))
+      .limit(5)*/
     //val df_year_aircraft_count = df_year_aircraft.
     //df_year_aircraft_count.withColumnRenamed("TYPE AIRCRAFT", "TYPE_AIRCRAFT")
     //df_year_aircraft_count.withColumnRenamed("YEAR MFR", "YEAR_MFR")
-    df_year_aircraft_count.sort(desc("count")).limit(5).show()
+
+    df_year_aircraft_count.cache()
+
+    df_year_aircraft_count.show()
 
    df_country_count
-      .sort(desc("count"))
-      .limit(10)
       .write
       .format("bigquery")
       .mode("overwrite")
@@ -97,8 +115,6 @@ object SparkDemo {
       .save()
 
     df_aircraft_count
-      .sort(desc("count"))
-      .limit(3)
       .write
       .format("bigquery")
       .mode("overwrite")
@@ -107,8 +123,6 @@ object SparkDemo {
       .save()
 
     df_year_aircraft_count
-      .sort(desc("count"))
-      .limit(5)
       .write
       .format("bigquery")
       .mode("overwrite")
@@ -118,28 +132,36 @@ object SparkDemo {
 
 
     val ds_country_count = ds
-      .filter("COUNTRY is not null")
-      .groupBy(ds("COUNTRY"))
+      //.filter("COUNTRY is not null")
+      .filter($"COUNTRY".isNotNull)
+      .groupBy($"COUNTRY")
       .count()
       .sort(desc("count"))
       .limit(10)
 
+    ds_country_count.cache()
+
     ds_country_count.show()
 
     val ds_aircraft_count = ds
-      .groupBy(ds("TYPE_AIRCRAFT"))
+      .groupBy($"TYPE_AIRCRAFT")
       .count()
       .sort(desc("count"))
       .limit(3)
 
+    ds_aircraft_count.cache()
+
     ds_aircraft_count.show()
 
+
     val ds_year_aircraft_count = ds
-      .filter("YEAR_MFR is not null")
-      .groupBy(ds("TYPE_AIRCRAFT"), ds("YEAR_MFR"))
+      .filter($"YEAR_MFR".isNotNull)
+      .groupBy($"TYPE_AIRCRAFT", $"YEAR_MFR")
       .count()
       .sort(desc("count"))
       .limit(5)
+
+    ds_year_aircraft_count.cache()
 
     ds_year_aircraft_count.show()
 

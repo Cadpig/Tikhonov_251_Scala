@@ -5,6 +5,7 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.pubsub.{PubsubUtils, SparkGCPCredentials}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
+import myPackage.DataFrameTransform
 
 import java.nio.charset.StandardCharsets
 import java.sql.Timestamp
@@ -14,6 +15,8 @@ object SparkDemoDStreamPubSub {
     Logger.getRootLogger.setLevel(Level.INFO)
 
     import org.apache.spark._
+
+    val transform = new DataFrameTransform()
 
     val conf = new SparkConf()
       .setMaster("local[*]")
@@ -68,10 +71,10 @@ object SparkDemoDStreamPubSub {
       val df = sc.createDataFrame(rows, schema)
       df.show()
 
-      val df_country_count = df.groupBy("COUNTRY", "LOAD_TIME").count()
+      val df_country_count = transform.transformCountry(df)/*df.groupBy("COUNTRY").count()
       df_country_count.sort(desc("count")).limit(10).show()
       df_country_count
-        .limit(10)
+        .limit(10)*/
         //.coalesce(1)
         .write
         //.csv("/Users/vladislavtihonov/Documents/CSV/tmp/test/country")
@@ -83,10 +86,10 @@ object SparkDemoDStreamPubSub {
       .save()
 
 
-      val df_aircraft_count = df.groupBy("TYPE_AIRCRAFT", "LOAD_TIME").count()
+      val df_aircraft_count = transform.transformAirplane(df)/*df.groupBy("TYPE_AIRCRAFT", "LOAD_TIME").count()
       df_aircraft_count.sort(desc("count")).limit(3).show()
       df_aircraft_count
-        .limit(3)
+        .limit(3)*/
         //.coalesce(1)
         .write
         //.csv("/Users/vladislavtihonov/Documents/CSV/tmp/test/aircraft")
@@ -98,13 +101,13 @@ object SparkDemoDStreamPubSub {
         .save()
 
 
-        val df_year_aircraft_count = df.groupBy("TYPE_AIRCRAFT", "YEAR_MFR", "LOAD_TIME").count()
+        val df_year_aircraft_count = transform.transformYearAirplane(df)/*df.groupBy("TYPE_AIRCRAFT", "YEAR_MFR", "LOAD_TIME").count()
       //val df_year_aircraft_count = df_year_aircraft.
       //df_year_aircraft_count.withColumnRenamed("TYPE AIRCRAFT", "TYPE_AIRCRAFT")
       //df_year_aircraft_count.withColumnRenamed("YEAR MFR", "YEAR_MFR")
       df_year_aircraft_count.sort(desc("count")).limit(5).show()
       df_year_aircraft_count
-        .limit(5)
+        .limit(5)*/
         //.coalesce(1)
         .write
         //.csv("/Users/vladislavtihonov/Documents/CSV/tmp/test/year")
